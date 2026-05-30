@@ -84,7 +84,14 @@ python3 -m pip install pymupdf pypdf ebooklib mobi beautifulsoup4
 - 标题是否像真实章节
 - 前言、目录、参考书目、后记是否被误纳入主线
 - EPUB HTML 顺序是否符合目录或正文顺序
+- EPUB 章节编号是否单调推进，例如不要出现“第九章”早于“第一章”
 - 注译本是否能看出原文/注释/翻译的边界
+
+如果 EPUB 章节顺序明显错乱：
+
+- 回查 `content.opf` 的 spine 顺序和 `toc.ncx` 的目录顺序
+- 优先修正提取器按 spine 读取，而不是在笔记里硬按错误顺序解释
+- 重新提取专属 JSON，并在笔记里记录“结构已校准”
 
 如果 EPUB 提取出的标题大量重复为书名或“未知”：
 
@@ -130,6 +137,15 @@ python3 -m pip install pymupdf pypdf ebooklib mobi beautifulsoup4
 - 哪些内容是练习题、附录或教学辅助，不应冒充正文主线
 
 上下文里只保留最近 10-15 个核心要点，避免膨胀。
+
+可并行执行互不依赖的阅读前置工作：
+
+- 章节标题和长度抽查
+- 前中后段抽样
+- 元数据和目录/spine 校验
+- 多个章节批次的初步要点提取
+
+但最终判断、文件写入、脚本修改和 Markdown 生成必须串行完成，避免覆盖结果或把未校准的结构写入笔记。
 
 ### 5) 生成解释
 
@@ -191,7 +207,7 @@ python3 -m pip install pymupdf pypdf ebooklib mobi beautifulsoup4
 ## 常见故障
 
 - **扫描版 PDF**：提取不到正文，提示需要 OCR
-- **EPUB 章节顺序混乱**：以提取顺序为准，并说明可能有偏差
+- **EPUB 章节顺序混乱**：不要直接使用错误顺序；先核对 spine/目录并重新提取
 - **MOBI 失败**：建议先转 EPUB
 - **依赖缺失**：只装当前格式需要的最小依赖
 - **文件名过长或含非法字符**：保存为 `workspace/book_notes.md`
@@ -212,6 +228,7 @@ python3 -m pip install pymupdf pypdf ebooklib mobi beautifulsoup4
 
 1. 文件格式和页数/章节数正确
 2. 提取内容不是空的
-3. 章节主线说得通
-4. 没有长篇引用原文
-5. 输出文件已经落到本地路径
+3. EPUB 章节顺序已和目录/spine 对齐
+4. 章节主线说得通
+5. 没有长篇引用原文
+6. 输出文件已经落到本地路径

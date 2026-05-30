@@ -48,6 +48,14 @@ SKIP_PATTERNS = [
 MIN_TEXT_LENGTH = 80
 
 
+def natural_sort_key(value):
+    """Sort file-like strings so chapter10 follows chapter9, not chapter1."""
+    return [
+        int(part) if part.isdigit() else part.lower()
+        for part in re.split(r'(\d+)', value)
+    ]
+
+
 def _pip_install_hint(*pkgs):
     quoted = " ".join(pkgs)
     return "%s -m pip install %s" % (sys.executable or "python3", quoted)
@@ -228,7 +236,7 @@ def extract_epub(file_path, max_pages=0):
                 n for n in z.namelist()
                 if n.lower().endswith((".html", ".htm", ".xhtml"))
             ]
-            names.sort()
+            names.sort(key=natural_sort_key)
 
             book_title = "Unknown"
             opf_candidates = [n for n in z.namelist() if n.lower().endswith(".opf")]
@@ -285,7 +293,21 @@ def extract_epub(file_path, max_pages=0):
     except Exception:
         pass
 
-    items = list(book.get_items_of_type(ebooklib.ITEM_DOCUMENT))
+    items = []
+    seen_item_ids = set()
+    for item_ref in book.spine:
+        item_id = item_ref[0] if isinstance(item_ref, tuple) else item_ref
+        item = book.get_item_with_id(item_id)
+        if not item or item.get_type() != ebooklib.ITEM_DOCUMENT:
+            continue
+        items.append(item)
+        seen_item_ids.add(item.get_id())
+
+    for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
+        if item.get_id() in seen_item_ids:
+            continue
+        items.append(item)
+
     total = len(items)
     limit = min(max_pages, total) if max_pages > 0 else total
 
