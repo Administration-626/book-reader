@@ -1,0 +1,5 @@
+*.epub
+workspace/*_extracted.json
+workspace/book_extracted.json
+__pycache__
+*.pyc
